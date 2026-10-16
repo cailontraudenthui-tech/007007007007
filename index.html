@@ -1,0 +1,343 @@
+
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+
+export const Route = createFileRoute("/")({
+  component: App,
+});
+
+const files = [
+  {
+    id: "report",
+    title: "INCIDENT REPORT",
+    code: "FILE NO. 007-A",
+    text: "The original record contains discrepancies. Several entries were altered after the archive was sealed.",
+  },
+  {
+    id: "letter",
+    title: "UNDELIVERED LETTER",
+    code: "EVIDENCE 02",
+    text: "If you are reading this, someone has already opened the file. Check the timestamp. It was never supposed to exist.",
+  },
+  {
+    id: "memo",
+    title: "INTERNAL MEMO",
+    code: "CLASSIFIED",
+    text: "Do not trust the final report. The person who assembled this board left something behind.",
+  },
+  {
+    id: "photo",
+    title: "SUBJECT RECORD",
+    code: "SUBJECT 001",
+    text: "Subject identification requires verification. Replace the photograph placeholder with the original image.",
+  },
+];
+
+function App() {
+  const [password, setPassword] = useState("");
+  const [unlocked, setUnlocked] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const [error, setError] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [secret, setSecret] = useState(false);
+
+  function unlock(e: React.FormEvent) {
+    e.preventDefault();
+    if (password.trim() === "1301") {
+      sessionStorage.setItem("case-access", "granted");
+      setUnlocked(true);
+      setError(false);
+    } else {
+      setPassword("");
+      setError(true);
+    }
+  }
+
+  const active = files.find((f) => f.id === selected);
+
+  return (
+    <main className="app">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+
+        *{box-sizing:border-box}
+        html,body,#root{margin:0;min-height:100%;background:#090807}
+        body{font-family:'Courier Prime',monospace;color:#e8dfcf}
+        button,input{font:inherit}
+        button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .app{min-height:100vh;background:#090807;position:relative;overflow:hidden}
+        .noise{position:fixed;inset:0;z-index:10;pointer-events:none;opacity:.09;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E")}
+        .gate,.welcome{min-height:100svh;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px 22px;position:relative;background:radial-gradient(ellipse at 50% 45%,#211719,#0d0b0b 52%,#050505)}
+        .gate-inner{width:min(100%,420px)}
+        .eyebrow{font-size:10px;letter-spacing:3px;color:#a54b4b;margin-bottom:38px}
+        .gate-title{font:600 clamp(76px,17vw,124px)/.76 'Cormorant Garamond',serif;letter-spacing:-4px;margin:0;color:#eee5d8}
+        .rule{width:70px;height:1px;background:#8b3438;margin:34px auto}
+        .sub{font-size:10px;letter-spacing:2px;color:#a39a90;margin-bottom:25px}
+        .form{display:grid;gap:12px}
+        .form input{width:100%;padding:16px;background:#0c0a0a;border:1px solid #453235;color:#eee5d8;text-align:center;letter-spacing:5px;outline:none;border-radius:0}
+        .form input:focus{border-color:#a64b50}
+        .action{padding:15px;background:#511b20;color:#f0e5dc;border:1px solid #85373c;font-size:11px;letter-spacing:3px;transition:background .2s}
+        .action:hover{background:#76272d}
+        .denied{color:#e34d52;font-size:11px;letter-spacing:3px;animation:flicker .3s 2}
+        .footnote{margin-top:38px;color:#625a53;font-size:9px;letter-spacing:1.5px}
+        .welcome{flex-direction:column;animation:appear 1.2s ease both}
+        .welcome-kicker{font-size:9px;letter-spacing:3px;color:#995052}
+        .name{font:500 clamp(52px,12vw,108px)/1.1 'Cormorant Garamond',serif;margin:32px 0 0;overflow-wrap:anywhere;color:#eee5d8}
+        .welcome h2{font:400 clamp(15px,3vw,22px) 'Special Elite',monospace;letter-spacing:2px}
+        .welcome-main{margin-top:28px;color:#b44c50;font-size:12px;letter-spacing:2px}
+        .welcome-sub{font-size:12px;line-height:1.8;color:#b7afa3;margin:5px}
+        .welcome-time{margin-top:30px;font-size:11px;letter-spacing:2px}
+        .action.enter{margin-top:30px;min-width:220px}
+        .header,.footer{display:flex;justify-content:space-between;gap:12px;padding:18px clamp(14px,4vw,42px);font-size:9px;letter-spacing:1.5px;color:#948679}
+        .header{border-bottom:1px solid #29201d}
+        .dot{display:inline-block;width:6px;height:6px;background:#a12e34;border-radius:50%;margin-right:8px;box-shadow:0 0 8px #a12e34}
+        .scene{padding:20px clamp(8px,3vw,32px) 35px}
+        .wood{max-width:1200px;margin:auto;padding:clamp(8px,1.5vw,18px);background:repeating-linear-gradient(90deg,#34241a 0 5px,#533b29 7px,#2b1b13 13px);border:2px solid #1b120d;box-shadow:0 18px 60px #000}
+        .board{position:relative;isolation:isolate;min-height:780px;overflow:hidden;background-color:#24201d;background-image:radial-gradient(ellipse at 20% 30%,#37302a,transparent 60%),radial-gradient(ellipse at 75% 75%,#171514,transparent 65%),repeating-linear-gradient(12deg,transparent 0 4px,#ffffff03 5px 6px)}
+        .board-label{position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;gap:10px;color:#a39a8b;font-size:9px;letter-spacing:2px}
+        .strings{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+        .strings path{fill:none;stroke:#8c2428;stroke-width:1.6;vector-effect:non-scaling-stroke;filter:drop-shadow(1px 2px 1px #090606)}
+        .paper{position:absolute;z-index:1;text-align:left;color:#29231e;border:0;box-shadow:2px 8px 13px #0009;background-color:#ddd4c2;background-image:repeating-linear-gradient(0deg,transparent 0 4px,#4b382008 5px);padding:17px;transition:transform .2s}
+        .paper:hover{z-index:5;filter:brightness(1.06)}
+        .paper h3{font:700 12px 'Special Elite',monospace;margin:13px 0}
+        .paper p{font-size:10px;line-height:1.7}
+        .code{display:block;font-size:8px;letter-spacing:1px;color:#6a5c4b}
+        .pin{position:absolute;top:-5px;left:50%;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d8d0bf,#777064 50%,#292522 75%);box-shadow:1px 2px 3px #000b}
+        .redact{height:8px;width:75%;background:#28211e;margin:10px 0}
+        .line{height:1px;background:#8e8372;margin:9px 0}
+        .stamp{display:inline-block;margin-top:6px;padding:4px;border:2px solid #8d292c;color:#8d292c;transform:rotate(-8deg);font-size:9px}
+        .hand{font:italic 13px 'Special Elite',monospace;color:#8f242a;line-height:1.6}
+        .report{top:13%;left:4%;width:25%;min-height:190px;transform:rotate(-5deg)}
+        .letter{top:14%;right:4%;width:24%;min-height:195px;transform:rotate(5deg)}
+        .memo{bottom:12%;left:6%;width:25%;min-height:185px;transform:rotate(3deg)}
+        .subject{top:17%;left:50%;transform:translateX(-50%);width:clamp(190px,30%,320px);padding:16px;background:#eee7d8}
+        .subject-top,.subject-meta{display:flex;justify-content:space-between;gap:6px;font-size:8px;letter-spacing:1px}
+        .subject h2{font:700 18px 'Special Elite',monospace;text-align:center;margin:14px 0}
+        .portrait{position:relative;width:100%;aspect-ratio:4/5;background:#211d1b;border:1px solid #8c8273;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center}
+        .portrait img{position:absolute;width:100%;height:100%;object-fit:cover;z-index:1}
+        .placeholder{font-size:10px;letter-spacing:2px;line-height:2;color:#b3a99a}
+        .crossout{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+        .crossout path{fill:none;stroke:#a20e20;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;opacity:.9;filter:drop-shadow(1px 1px 0 #3b1010)}
+        .subject-meta{margin-top:12px}
+        .warning{font:italic 11px 'Special Elite',monospace;color:#8c2428;margin:12px 0 0}
+        .date{top:56%;right:7%;width:23%;transform:rotate(-4deg)}
+        .date strong{display:block;font:700 24px 'Special Elite',monospace;margin:14px 0}
+        .date .digital{font-size:32px;color:#8b2428}
+        .hidden-note{bottom:8%;right:7%;width:26%;transform:rotate(4deg);min-height:110px}
+        .hidden-note .hand{font-size:13px}
+        .board-footer{position:absolute;bottom:15px;left:18px;right:18px;display:flex;justify-content:space-between;gap:10px;font-size:8px;letter-spacing:1px;color:#a59a8b}
+        .modal-backdrop{position:fixed;inset:0;z-index:20;background:#000d;display:grid;place-items:center;padding:20px}
+        .modal{position:relative;width:min(100%,440px);max-height:85svh;overflow:auto;background:#e8dfcf;color:#28221d;padding:35px 28px;box-shadow:0 20px 80px #000}
+        .modal h2{font:700 24px 'Special Elite',monospace;margin:25px 0}
+        .modal p{font-size:13px;line-height:1.9}
+        .modal .hand{color:#8f242a}
+        .close{position:absolute;right:14px;top:10px;border:0;background:none;color:#28221d;font-size:28px}
+        .modal-time{font:700 27px 'Special Elite',monospace}
+        .archive-warning{color:#9e4141;font-size:10px;letter-spacing:1px}
+        @keyframes appear{from{opacity:0}to{opacity:1}}
+        @keyframes flicker{0%,100%{opacity:1}50%{opacity:.3}}
+        @media(max-width:600px){
+          .board{min-height:900px}
+          .board-label{font-size:7px;letter-spacing:1px}
+          .report{top:9%;left:4%;width:39%;min-height:155px;padding:12px}
+          .letter{top:10%;right:4%;width:37%;min-height:160px;padding:12px}
+          .subject{top:29%;width:min(66%,280px);padding:12px}
+          .subject h2{font-size:15px}
+          .memo{bottom:9%;left:4%;width:40%;min-height:150px;padding:12px}
+          .date{top:auto;bottom:10%;right:4%;width:38%;padding:12px}
+          .date strong{font-size:19px}
+          .date .digital{font-size:27px}
+          .hidden-note{bottom:1%;right:5%;width:53%;min-height:80px;padding:10px;transform:rotate(2deg)}
+          .board-footer{bottom:auto;top:48%;font-size:7px}
+          .paper h3{font-size:10px}
+          .paper p{font-size:9px}
+          .header,.footer{font-size:8px}
+          .welcome-kicker{font-size:8px;letter-spacing:2px}
+          .welcome-time{font-size:10px;letter-spacing:1px}
+        }
+        @media(prefers-reduced-motion:reduce){
+          *,*::before,*::after{animation:none!important;transition:none!important}
+        }
+      `}</style>
+
+      <div className="noise" />
+
+      {!unlocked ? (
+        <section className="gate">
+          <div className="gate-inner">
+            <p className="eyebrow">RESTRICTED ARCHIVE // 007</p>
+            <h1 className="gate-title">THE<br />GUISE</h1>
+            <div className="rule" />
+            <p className="sub">IDENTITY VERIFICATION REQUIRED</p>
+
+            <form className="form" onSubmit={unlock}>
+              <input
+                type="password"
+                placeholder="ENTER ACCESS CODE"
+                aria-label="Access code"
+                autoComplete="off"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(false);
+                }}
+                required
+              />
+              <button className="action" type="submit">UNLOCK ↗</button>
+            </form>
+
+            {error && <p className="denied">ACCESS DENIED</p>}
+            <p className="footnote">UNAUTHORIZED ACCESS WILL BE RECORDED.</p>
+          </div>
+        </section>
+      ) : !entered ? (
+        <section className="welcome">
+          <p className="welcome-kicker">ARCHIVE CONNECTION ESTABLISHED</p>
+          <h1 className="name">[KEONHO..]</h1>
+          <div className="rule" />
+          <h2>WELCOME, INVESTIGATOR.</h2>
+          <p className="welcome-main">THE GUISE HAS BEEN OPENED.</p>
+          <p className="welcome-sub">Your presence has been recorded.</p>
+          <p className="welcome-sub">You were expected.</p>
+          <p className="welcome-time">31/10/2000 — 03:03 AM</p>
+          <button className="action enter" onClick={() => setEntered(true)}>
+            ENTER CASE FILE ↗
+          </button>
+        </section>
+      ) : (
+        <>
+          <header className="header">
+            <span><i className="dot" /> CLASSIFIED ARCHIVE</span>
+            <span>CASE NO. 007</span>
+          </header>
+
+          <section className="scene">
+            <div className="wood">
+              <div className="board">
+                <div className="board-label">
+                  <span>INVESTIGATION WALL</span>
+                  <span>DO NOT DISTRIBUTE</span>
+                </div>
+
+                <svg className="strings" viewBox="0 0 1000 780" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M130 170 L500 340 L830 160" />
+                  <path d="M500 340 L190 600 L810 620" />
+                  <path d="M830 160 L810 620" />
+                  <path d="M130 170 L830 160" />
+                  <path d="M190 600 L500 340 L810 620" />
+                </svg>
+
+                <button className="paper report" onClick={() => setSelected("report")}>
+                  <span className="pin" />
+                  <span className="code">FILE NO. 007-A</span>
+                  <h3>INCIDENT REPORT</h3>
+                  <div className="redact" />
+                  <div className="line" />
+                  <div className="line" />
+                  <p>Record discrepancies detected.</p>
+                  <span className="stamp">CLASSIFIED</span>
+                </button>
+
+                <button className="paper letter" onClick={() => setSelected("letter")}>
+                  <span className="pin" />
+                  <span className="hand">read carefully...</span>
+                  <h3>UNDELIVERED LETTER</h3>
+                  <p>Someone was here<br />before you.</p>
+                  <div className="redact" />
+                  <span className="code">EVIDENCE 02</span>
+                </button>
+
+                <button className="paper memo" onClick={() => setSelected("memo")}>
+                  <span className="pin" />
+                  <span className="code">INTERNAL MEMO</span>
+                  <h3>DO NOT TRUST</h3>
+                  <div className="line" />
+                  <div className="line" />
+                  <div className="redact" />
+                  <p className="hand">the last page is missing</p>
+                </button>
+
+                <button className="paper subject" onClick={() => setSelected("photo")}>
+                  <span className="pin" />
+                  <div className="subject-top">
+                    <span>SUBJECT FILE</span>
+                    <span>007 / A</span>
+                  </div>
+                  <h2>SEONGHYEON</h2>
+
+                  <div className="portrait">
+                    <span className="placeholder">PHOTO<br />INSERT REQUIRED</span>
+                    <img
+                      src="/images/seonghyeon.jpg"
+                      alt="Seonghyeon from CORTIS"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                    <svg className="crossout" viewBox="0 0 300 360" preserveAspectRatio="none" aria-label="Red ink crossing out the photograph">
+                      <path d="M-15 65 Q65 110 145 195 T320 305" />
+                      <path d="M-10 300 Q85 205 170 120 T320 25" />
+                      <path d="M35 5 Q80 100 180 215 T275 360" />
+                    </svg>
+                  </div>
+
+                  <div className="subject-meta">
+                    <span>STATUS: REDACTED</span>
+                    <span>CASE 007</span>
+                  </div>
+                  <p className="warning">DO NOT TRUST THE RECORD.</p>
+                </button>
+
+                <button className="paper date" onClick={() => setSelected("date")}>
+                  <span className="pin" />
+                  <span className="code">ARCHIVE TIMESTAMP</span>
+                  <strong>7/1/2000</strong>
+                  <strong className="digital">02:09</strong>
+                  <span className="code">RECORD LOCKED</span>
+                </button>
+
+                <button className="paper hidden-note" onClick={() => setSecret(!secret)}>
+                  <span className="pin" />
+                  <span className="hand">
+                    {secret ? "YOU WERE NEVER SUPPOSED TO FIND THIS FILE." : "Do you remember?"}
+                  </span>
+                  <span className="code">{secret ? "MESSAGE RECOVERED" : "CLICK TO REVEAL"}</span>
+                </button>
+
+                <div className="board-footer">
+                  <span>ARCHIVE STATUS: COMPROMISED</span>
+                  <span>YOU ARE BEING OBSERVED.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <footer className="footer">
+            <span>7/1/2000 — 02:09</span>
+            <span>EVERYTHING HAS BEEN RECORDED.</span>
+          </footer>
+        </>
+      )}
+
+      {active && unlocked && entered && (
+        <div className="modal-backdrop" onClick={() => setSelected(null)}>
+          <section className="modal" role="dialog" aria-modal="true" aria-label={active.title} onClick={(e) => e.stopPropagation()}>
+            <button className="close" onClick={() => setSelected(null)} aria-label="Close">×</button>
+            <span className="code">{active.code}</span>
+            <h2>{active.title}</h2>
+
+            {active.id === "date" ? (
+              <div className="modal-time">7/1/2000<br />02:09</div>
+            ) : (
+              <p>{active.text}</p>
+            )}
+
+            <div className="redact" />
+            <p className="hand">Someone altered this record.</p>
+            <p className="archive-warning">END OF AVAILABLE RECORD</p>
+          </section>
+        </div>
+      )}
+    </main>
+  );
+}
